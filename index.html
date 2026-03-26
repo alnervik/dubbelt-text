@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Dubbelspelet!</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Gabarito:wght@400;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #fef7ec;
+    --card: #ffffff;
+    --pink: #f472b6;
+    --yellow: #fbbf24;
+    --green: #34d399;
+    --blue: #60a5fa;
+    --purple: #a78bfa;
+    --orange: #fb923c;
+    --red: #f87171;
+    --dark: #1e1b4b;
+    --muted: #6b7280;
+    --soft-bg: #fef3c7;
+  }
+
+  body {
+    font-family: 'Fredoka', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    color: var(--dark);
+  }
+
+  .container {
+    width: 100%;
+    max-width: 520px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* Decorative blobs */
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  body::before {
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(244,114,182,0.12), transparent 70%);
+    top: -80px; right: -80px;
+  }
+  body::after {
+    width: 350px; height: 350px;
+    background: radial-gradient(circle, rgba(96,165,250,0.1), transparent 70%);
+    bottom: -100px; left: -100px;
+  }
+
+  .container > * { position: relative; z-index: 1; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 6px; }
+  .header h1 {
+    font-family: 'Gabarito', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 900;
+    color: var(--dark);
+    letter-spacing: -1px;
+  }
+  .header h1 span { color: var(--pink); }
+  .level-badge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 4px 16px;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+  }
+  .lv1-b { background: linear-gradient(135deg, var(--blue), var(--purple)); }
+  .lv2-b { background: linear-gradient(135deg, var(--orange), var(--pink)); }
+
+  /* Progress */
+  .progress-area { width: 100%; margin: 10px 0 14px; }
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; font-weight: 500;
+  }
+  .progress-bar {
+    width: 100%; height: 14px;
+    background: #e5e7eb; border-radius: 10px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 10px;
+    background: linear-gradient(90deg, var(--green), var(--yellow));
+    transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    position: relative;
+  }
+  .progress-fill::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 2s infinite;
+  }
+  @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+
+  /* Score row */
+  .score-row { display: flex; gap: 12px; width: 100%; margin-bottom: 14px; }
+  .score-box {
+    flex: 1; text-align: center; padding: 8px;
+    border-radius: 16px; background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 2px solid #f3f4f6;
+  }
+  .score-box .num { font-family: 'Gabarito', sans-serif; font-size: 1.6rem; font-weight: 900; }
+  .score-box .lbl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .s-clr { color: var(--orange); }
+  .c-clr { color: var(--green); }
+
+  /* Story card */
+  .story-card {
+    width: 100%; background: white; border-radius: 28px;
+    padding: 24px 22px 28px; text-align: center;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    border: 3px solid #f3f4f6;
+  }
+  .story-emoji {
+    font-size: 3rem; margin-bottom: 4px; display: block;
+    animation: wiggle 3s ease-in-out infinite;
+  }
+  @keyframes wiggle { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-4deg)} 75%{transform:rotate(4deg)} }
+
+  .items-row {
+    display: flex; justify-content: center; gap: 3px;
+    flex-wrap: wrap; margin: 6px auto 8px; max-width: 340px; min-height: 32px;
+  }
+  .item-e {
+    font-size: 1.4rem; display: inline-block;
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes popIn { 0%{transform:scale(0);opacity:0} 100%{transform:scale(1);opacity:1} }
+
+  .story-text {
+    font-size: 1.12rem; font-weight: 500; line-height: 1.7;
+    color: var(--dark); margin: 8px 0; min-height: 65px;
+    text-align: center;
+  }
+  .story-text .nh { font-weight: 700; color: var(--pink); }
+  .story-text .numh {
+    font-family: 'Gabarito', sans-serif; font-weight: 900;
+    color: var(--blue); font-size: 1.25rem;
+  }
+  .story-text strong { color: var(--purple); font-weight: 700; }
+
+  .q-line {
+    font-family: 'Gabarito', sans-serif; font-size: 1.15rem;
+    font-weight: 700; color: var(--dark);
+    margin: 8px 0 18px; padding: 8px 14px;
+    background: var(--soft-bg); border-radius: 14px; display: inline-block;
+  }
+  .q-line .qm { color: var(--pink); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* Answers */
+  .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+  .abtn {
+    font-family: 'Gabarito', sans-serif; font-size: 1.8rem; font-weight: 900;
+    padding: 16px 10px; border: none; border-radius: 18px;
+    cursor: pointer; color: white; position: relative;
+    -webkit-tap-highlight-color: transparent; transition: transform 0.1s;
+  }
+  .abtn::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 50%);
+    pointer-events: none; border-radius: 18px;
+  }
+  .abtn:active { transform: translateY(3px); }
+  .abtn:disabled { pointer-events: none; }
+
+  .a0{background:#f472b6;box-shadow:0 5px 0 #db2777}
+  .a1{background:#60a5fa;box-shadow:0 5px 0 #2563eb}
+  .a2{background:#a78bfa;box-shadow:0 5px 0 #7c3aed}
+  .a3{background:#fb923c;box-shadow:0 5px 0 #ea580c}
+  .a0:active{box-shadow:0 2px 0 #db2777} .a1:active{box-shadow:0 2px 0 #2563eb}
+  .a2:active{box-shadow:0 2px 0 #7c3aed} .a3:active{box-shadow:0 2px 0 #ea580c}
+
+  .abtn.ok { animation: okPop 0.5s ease; background: var(--green)!important; box-shadow: 0 5px 0 #059669!important; }
+  @keyframes okPop { 0%{transform:scale(1)} 40%{transform:scale(1.1)} 100%{transform:scale(1)} }
+  .abtn.nope { animation: noShake 0.45s ease; opacity: 0.35; }
+  @keyframes noShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+
+  /* Feedback */
+  .fb {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+  }
+  .fb.show { opacity: 1; }
+  .fb-in {
+    font-family: 'Gabarito', sans-serif; font-size: 2.8rem; font-weight: 900;
+    text-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    animation: fbP 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    background: white; padding: 14px 28px; border-radius: 22px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+  }
+  @keyframes fbP { 0%{transform:scale(0) rotate(-8deg);opacity:0} 60%{transform:scale(1.12) rotate(2deg)} 100%{transform:scale(1) rotate(0)} }
+
+  /* Overlays */
+  .ov {
+    position: fixed; inset: 0; background: rgba(254,247,236,0.96);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.4s;
+  }
+  .ov.show { opacity: 1; pointer-events: all; }
+  .ov .be { font-size: 4.5rem; margin-bottom: 12px; animation: wiggle 1.5s ease-in-out infinite; }
+  .ov h2 { font-family: 'Gabarito', sans-serif; font-size: 2rem; font-weight: 900; color: var(--dark); text-align: center; }
+  .ov p { margin-top: 8px; color: var(--muted); font-size: 1.05rem; text-align: center; line-height: 1.6; }
+  .ov-btn {
+    margin-top: 24px; font-family: 'Fredoka', sans-serif;
+    font-size: 1.15rem; font-weight: 700; padding: 14px 40px;
+    border: none; border-radius: 16px; color: white; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-g { background: var(--green); box-shadow: 0 5px 0 #059669; }
+  .btn-g:active { transform: translateY(3px); box-shadow: 0 2px 0 #059669; }
+  .btn-p { background: var(--pink); box-shadow: 0 5px 0 #db2777; }
+  .btn-p:active { transform: translateY(3px); box-shadow: 0 2px 0 #db2777; }
+
+  /* Confetti */
+  .cf-box { position: fixed; inset: 0; pointer-events: none; z-index: 300; overflow: hidden; }
+  .cf {
+    position: absolute; top: -20px; border-radius: 3px;
+    animation: cfF linear forwards;
+  }
+  @keyframes cfF { 0%{transform:translateY(0) rotate(0);opacity:1} 100%{transform:translateY(110vh) rotate(720deg);opacity:0} }
+
+  /* Start */
+  .start {
+    text-align: center; padding: 24px 10px; flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .start .mascot { font-size: 5rem; animation: wiggle 2s ease-in-out infinite; display: block; }
+  .start h2 { font-family: 'Gabarito', sans-serif; font-size: 1.9rem; font-weight: 900; margin: 14px 0 6px; }
+  .start p { color: var(--muted); font-size: 1rem; line-height: 1.7; margin-bottom: 24px; max-width: 340px; }
+  .start p strong { color: var(--purple); }
+  .go-btn {
+    font-family: 'Fredoka', sans-serif; font-size: 1.25rem; font-weight: 700;
+    padding: 16px 50px; border: none; border-radius: 18px;
+    background: var(--green); color: white; cursor: pointer;
+    box-shadow: 0 6px 0 #059669; -webkit-tap-highlight-color: transparent;
+  }
+  .go-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #059669; }
+
+  .rst-btn {
+    margin-top: 16px; font-family: 'Fredoka', sans-serif; font-size: 0.82rem;
+    padding: 7px 18px; border: 2px solid #e5e7eb; border-radius: 12px;
+    background: transparent; color: var(--muted); cursor: pointer;
+  }
+
+  .done {
+    text-align: center; padding: 24px 10px; flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Dubbel<span>spelet!</span></h1>
+    <div class="level-badge lv1-b" id="lvBadge">⭐ Nivå 1 — Dubblor 1–5</div>
+  </div>
+
+  <!-- START -->
+  <div id="startScr" class="start">
+    <span class="mascot">🦊</span>
+    <h2>Dubbelt så många!</h2>
+    <p>Räven Rufus behöver hjälp att räkna!<br>
+    Kan du räkna ut vad <strong>dubbelt</strong> blir?<br>
+    Dubbelt = samma tal <strong>två gånger</strong>!</p>
+    <button class="go-btn" onclick="startGame()">Jag hjälper! 🚀</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="gameArea" style="display:none; width:100%; flex-direction:column; align-items:center;">
+    <div class="progress-area">
+      <div class="progress-label">
+        <span id="pLabel">Rätt till nästa nivå</span>
+        <span id="pCount">0 / 8</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="pFill" style="width:0%"></div></div>
+    </div>
+    <div class="score-row">
+      <div class="score-box"><div class="num s-clr" id="sNum">0</div><div class="lbl">Svit 🔥</div></div>
+      <div class="score-box"><div class="num c-clr" id="cNum">0</div><div class="lbl">Rätt ✅</div></div>
+    </div>
+    <div class="story-card">
+      <span class="story-emoji" id="sEmoji">🐱</span>
+      <div class="items-row" id="iRow"></div>
+      <div class="story-text" id="sTxt"></div>
+      <div class="q-line" id="qLine"></div>
+      <div class="answers" id="aGrid"></div>
+    </div>
+    <button class="rst-btn" onclick="resetGame()">🔄 Börja om</button>
+  </div>
+
+  <!-- DONE -->
+  <div id="doneScr" class="done" style="display:none;">
+    <span style="font-size:5rem;display:block;margin-bottom:10px;">🏆</span>
+    <h2 style="font-family:'Gabarito',sans-serif;font-size:2rem;font-weight:900;">Du är en dubbelmästare!</h2>
+    <p style="color:var(--muted);margin:12px 0;line-height:1.7;">
+      Du klarade alla dubblor 1–10! 🎉<br>Rufus räven är superimponerad!
+    </p>
+    <button class="ov-btn btn-p" onclick="resetGame()">Spela igen! 🔄</button>
+  </div>
+</div>
+
+<!-- Feedback -->
+<div class="fb" id="fb"><div class="fb-in" id="fbIn"></div></div>
+
+<!-- Level up -->
+<div class="ov" id="lvOv">
+  <div class="be">🎉</div>
+  <h2>Nivå 2 upplåst!</h2>
+  <p>Nu kör vi dubblor 1–10!<br>Du fixar det! 💪</p>
+  <button class="ov-btn btn-g" onclick="goLv2()">Kör vidare! 🚀</button>
+</div>
+
+<div class="cf-box" id="cfBox"></div>
+
+<script>
+// ========= DATA =========
+const names = [
+  'Kalle','Stina','Olle','Maja','Elias','Wilma','Hugo','Ebba',
+  'Liam','Astrid','Nils','Saga','Erik','Alma','Axel','Elin',
+  'Oscar','Freja','Leo','Signe','Alva','Ines','Ludvig','Vera',
+  'Molly','Anton','Selma','Isak','Tuva','Arvid','Klara','Love'
+];
+
+const things = [
+  // tags: f=food/bakeable, n=nature/pickable, a=animal, o=object
+  { e:'🐱', s:'katt',      p:'katter',     t:'a' },
+  { e:'🐶', s:'hund',      p:'hundar',     t:'a' },
+  { e:'🍎', s:'äpple',     p:'äpplen',     t:'fn'},
+  { e:'⭐', s:'stjärna',   p:'stjärnor',   t:'o' },
+  { e:'🎈', s:'ballong',   p:'ballonger',  t:'o' },
+  { e:'🍪', s:'kaka',      p:'kakor',      t:'f' },
+  { e:'📚', s:'bok',       p:'böcker',     t:'o' },
+  { e:'🧸', s:'nalle',     p:'nallar',     t:'o' },
+  { e:'🚗', s:'bil',       p:'bilar',      t:'o' },
+  { e:'🌸', s:'blomma',    p:'blommor',    t:'n' },
+  { e:'🐟', s:'fisk',      p:'fiskar',     t:'a' },
+  { e:'🦋', s:'fjäril',    p:'fjärilar',   t:'a' },
+  { e:'🍬', s:'godis',     p:'godisbitar', t:'f' },
+  { e:'⚽', s:'boll',      p:'bollar',     t:'o' },
+  { e:'🖍️', s:'krita',     p:'kritor',     t:'o' },
+  { e:'🍌', s:'banan',     p:'bananer',    t:'fn'},
+  { e:'🐸', s:'groda',     p:'grodor',     t:'a' },
+  { e:'🐣', s:'kyckling',  p:'kycklingar', t:'a' },
+  { e:'🍓', s:'jordgubbe', p:'jordgubbar', t:'fn'},
+  { e:'🦄', s:'enhörning', p:'enhörningar',t:'a' },
+  { e:'🐢', s:'sköldpadda',p:'sköldpaddor',t:'a' },
+  { e:'🧁', s:'muffins',   p:'muffins',    t:'f' },
+  { e:'🎁', s:'present',   p:'presenter',  t:'o' },
+  { e:'🌻', s:'solros',    p:'solrosor',   t:'n' },
+  { e:'🍰', s:'tårtbit',   p:'tårtbitar',  t:'f' },
+  { e:'🐞', s:'nyckelpiga',p:'nyckelpigor',t:'a' },
+];
+
+function w(n, t) { return n === 1 ? t.s : t.p; }
+
+// Universal templates – work with ALL items
+const universalTemplates = [
+  (a,b,n,t) => ({
+    txt: `<span class="nh">${a}</span> har <span class="numh">${n}</span> ${w(n,t)}. <span class="nh">${b}</span> har <strong>dubbelt</strong> så många.`,
+    q: `Hur många ${t.p} har ${b}?`
+  }),
+  (a,b,n,t) => ({
+    txt: `<span class="nh">${a}</span> fick <span class="numh">${n}</span> ${w(n,t)}. <span class="nh">${b}</span> fick <strong>dubbelt</strong> så många!`,
+    q: `Hur många fick ${b}?`
+  }),
+  (a,b,n,t) => ({
+    txt: `<span class="nh">${a}</span> såg <span class="numh">${n}</span> ${w(n,t)} på utflykten. <span class="nh">${b}</span> såg <strong>dubbelt</strong> så många!`,
+    q: `Hur många såg ${b}?`
+  }),
+  (a,b,n,t) => ({
+    txt: `<span class="nh">${a}</span> räknade <span class="numh">${n}</span> ${w(n,t)} på väg till skolan. <span class="nh">${b}</span> räknade <strong>dubbelt</strong> så många!`,
+    q: `Hur många räknade ${b}?`
+  }),
+  (a,b,n,t) => ({
+    txt: `<span class="nh">${a}</span> ritade <span class="numh">${n}</span> ${w(n,t)}. <span class="nh">${b}</span> ritade <strong>dubbelt</strong> så många!`,
+    q: `Hur många ritade ${b}?`
+  }),
+  (a,b,n,t) => ({
+    txt: `I <span class="nh">${a}s</span> låda finns <span class="numh">${n}</span> ${w(n,t)}. I <span class="nh">${b}s</span> låda finns <strong>dubbelt</strong> så många!`,
+    q: `Hur många har ${b} i sin låda?`
+  }),
+];
+
+// Food-only templates (t includes 'f')
+const foodTemplates = [
+  (a,b,n,t) => ({
+    txt: `<span class="nh">${a}</span> bakade <span class="numh">${n}</span> ${w(n,t)}. <span class="nh">${b}</span> bakade <strong>dubbelt</strong> så många!`,
+    q: `Hur många bakade ${b}?`
+  }),
+  (a,b,n,t) => ({
+    txt: `<span class="nh">${a}</span> åt <span class="numh">${n}</span> ${w(n,t)}. <span class="nh">${b}</span> åt <strong>dubbelt</strong> så många!`,
+    q: `Hur många åt ${b}?`
+  }),
+];
+
+// Nature-only templates (t includes 'n')
+const natureTemplates = [
+  (a,b,n,t) => ({
+    txt: `<span class="nh">${a}</span> plockade <span class="numh">${n}</span> ${w(n,t)} på ängen. <span class="nh">${b}</span> plockade <strong>dubbelt</strong> så många!`,
+    q: `Hur många plockade ${b}?`
+  }),
+  (a,b,n,t) => ({
+    txt: `<span class="nh">${a}</span> hittade <span class="numh">${n}</span> ${w(n,t)} i trädgården. <span class="nh">${b}</span> hittade <strong>dubbelt</strong> så många!`,
+    q: `Hur många hittade ${b}?`
+  }),
+];
+
+// Object-only templates (t includes 'o')
+const objectTemplates = [
+  (a,b,n,t) => ({
+    txt: `<span class="nh">${a}</span> köpte <span class="numh">${n}</span> ${w(n,t)} i affären. <span class="nh">${b}</span> köpte <strong>dubbelt</strong> så många.`,
+    q: `Hur många köpte ${b}?`
+  }),
+  (a,b,n,t) => ({
+    txt: `I <span class="nh">${a}s</span> väska ligger <span class="numh">${n}</span> ${w(n,t)}. I <span class="nh">${b}s</span> väska ligger <strong>dubbelt</strong> så många!`,
+    q: `Hur många har ${b} i sin väska?`
+  }),
+];
+
+// Animal-only templates (t includes 'a')
+const animalTemplates = [
+  (a,b,n,t) => ({
+    txt: `<span class="nh">${a}</span> hittade <span class="numh">${n}</span> ${w(n,t)} i skogen. <span class="nh">${b}</span> hittade <strong>dubbelt</strong> så många!`,
+    q: `Hur många hittade ${b}?`
+  }),
+  (a,b,n,t) => ({
+    txt: `<span class="nh">${a}</span> har <span class="numh">${n}</span> ${w(n,t)} hemma. <span class="nh">${b}</span> har <strong>dubbelt</strong> så många hemma!`,
+    q: `Hur många har ${b} hemma?`
+  }),
+];
+
+function getTemplatesFor(thing) {
+  const pool = [...universalTemplates];
+  if (thing.t.includes('f')) pool.push(...foodTemplates);
+  if (thing.t.includes('n')) pool.push(...natureTemplates);
+  if (thing.t.includes('o')) pool.push(...objectTemplates);
+  if (thing.t.includes('a')) pool.push(...animalTemplates);
+  return pool;
+}
+
+// ========= STATE =========
+let level=1, cc=0, streak=0, tot=0, curAns=0, busy=false;
+const G1=8, G2=10;
+
+const pk = a => a[Math.floor(Math.random()*a.length)];
+function pk2(a) { let x=pk(a), y=pk(a); while(y===x) y=pk(a); return [x,y]; }
+function shuf(a) { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function startGame() {
+  document.getElementById('startScr').style.display='none';
+  const g=document.getElementById('gameArea');
+  g.style.display='flex';
+  newQ();
+}
+
+function newQ() {
+  busy = false;
+  const mx = level===1 ? 5 : 10;
+  const num = 1+Math.floor(Math.random()*mx);
+  curAns = num*2;
+
+  const [n1,n2] = pk2(names);
+  const thing = pk(things);
+  const pool = getTemplatesFor(thing);
+  const tpl = pk(pool);
+  const story = tpl(n1, n2, num, thing);
+
+  document.getElementById('sEmoji').textContent = thing.e;
+
+  // Items row
+  const ir = document.getElementById('iRow');
+  ir.innerHTML = '';
+  for(let i=0; i<num; i++){
+    const sp = document.createElement('span');
+    sp.className='item-e';
+    sp.textContent=thing.e;
+    sp.style.animationDelay=(i*0.05)+'s';
+    ir.appendChild(sp);
+  }
+
+  document.getElementById('sTxt').innerHTML = story.txt;
+  document.getElementById('qLine').innerHTML = story.q + ' <span class="qm">❓</span>';
+
+  // Answers
+  const ans = mkAns(curAns, mx);
+  const grid = document.getElementById('aGrid');
+  grid.innerHTML = '';
+  ans.forEach((v,i)=>{
+    const b = document.createElement('button');
+    b.className = `abtn a${i}`;
+    b.textContent = v;
+    b.onclick = () => check(v, b);
+    grid.appendChild(b);
+  });
+}
+
+function mkAns(cor, mx) {
+  const s=new Set([cor]);
+  const pool=[];
+  for(let i=2;i<=mx*2+2;i++) if(i!==cor&&i>0) pool.push(i);
+  pool.sort((a,b)=>Math.abs(a-cor)-Math.abs(b-cor));
+  let near=pool.slice(0,8);
+  while(s.size<4&&near.length){ const j=Math.floor(Math.random()*Math.min(5,near.length)); s.add(near.splice(j,1)[0]); }
+  return shuf([...s]);
+}
+
+const yay=['Rätt!','Snyggt!','Woho!','Toppen!','Bra!','Yes!','Grym!','Perfekt!','Wow!','Najs!','Kanon!'];
+const nay=['Nästan!','Ojdå!','Nära!','Försök igen!'];
+const yE=['🥳','🎉','😄','🌟','⭐','💪','👏','✨','🔥','💥'];
+const nE=['🙃','😅','💭','🤭'];
+
+function check(v, btn) {
+  if(busy) return;
+  busy=true;
+  document.querySelectorAll('.abtn').forEach(b=>b.disabled=true);
+
+  if(v===curAns) {
+    btn.classList.add('ok');
+    streak++; tot++; cc++;
+    document.getElementById('sNum').textContent=streak;
+    document.getElementById('cNum').textContent=tot;
+    showFb(pk(yE)+' '+pk(yay), true);
+    mCf();
+    updProg();
+    setTimeout(()=>{
+      if(level===1&&cc>=G1) showLvUp();
+      else if(level===2&&cc>=G2) showDone();
+      else newQ();
+    },1100);
+  } else {
+    btn.classList.add('nope');
+    streak=0;
+    document.getElementById('sNum').textContent=0;
+    showFb(pk(nE)+' '+pk(nay), false);
+    setTimeout(()=>{
+      document.querySelectorAll('.abtn').forEach(b=>{ if(parseInt(b.textContent)===curAns) b.classList.add('ok'); });
+    },400);
+    setTimeout(()=>newQ(),1500);
+  }
+}
+
+function updProg() {
+  const mx=level===1?G1:G2;
+  document.getElementById('pFill').style.width=Math.min(100,(cc/mx)*100)+'%';
+  document.getElementById('pCount').textContent=`${Math.min(cc,mx)} / ${mx}`;
+  document.getElementById('pLabel').textContent=level===1?'Rätt till nästa nivå':'Rätt till mästare';
+}
+
+function showFb(txt, ok) {
+  const f=document.getElementById('fb'), fi=document.getElementById('fbIn');
+  fi.textContent=txt;
+  fi.style.color=ok?'#059669':'#dc2626';
+  f.classList.add('show');
+  setTimeout(()=>f.classList.remove('show'),900);
+}
+
+const cfColors=['#f472b6','#fbbf24','#34d399','#60a5fa','#a78bfa','#fb923c','#f87171'];
+function mCf() {
+  const bx=document.getElementById('cfBox');
+  for(let i=0;i<18;i++){
+    const c=document.createElement('div');c.className='cf';
+    c.style.left=(15+Math.random()*70)+'%';
+    c.style.backgroundColor=cfColors[Math.floor(Math.random()*cfColors.length)];
+    c.style.animationDuration=(1+Math.random()*1.5)+'s';
+    c.style.animationDelay=(Math.random()*0.3)+'s';
+    c.style.width=(5+Math.random()*8)+'px';
+    c.style.height=(5+Math.random()*8)+'px';
+    c.style.borderRadius=Math.random()>0.5?'50%':'2px';
+    bx.appendChild(c);setTimeout(()=>c.remove(),3000);
+  }
+}
+function bCf() {
+  const bx=document.getElementById('cfBox');
+  for(let i=0;i<55;i++){
+    const c=document.createElement('div');c.className='cf';
+    c.style.left=(Math.random()*100)+'%';
+    c.style.backgroundColor=cfColors[Math.floor(Math.random()*cfColors.length)];
+    c.style.animationDuration=(1.5+Math.random()*2)+'s';
+    c.style.animationDelay=(Math.random()*0.8)+'s';
+    c.style.width=(7+Math.random()*12)+'px';
+    c.style.height=(7+Math.random()*12)+'px';
+    c.style.borderRadius=Math.random()>0.5?'50%':'2px';
+    bx.appendChild(c);setTimeout(()=>c.remove(),4500);
+  }
+}
+
+function showLvUp() { bCf(); document.getElementById('lvOv').classList.add('show'); }
+
+function goLv2() {
+  level=2; cc=0;
+  document.getElementById('lvOv').classList.remove('show');
+  document.getElementById('lvBadge').textContent='🔥 Nivå 2 — Dubblor 1–10';
+  document.getElementById('lvBadge').className='level-badge lv2-b';
+  updProg(); newQ();
+}
+
+function showDone() {
+  bCf();
+  setTimeout(()=>{
+    document.getElementById('gameArea').style.display='none';
+    document.getElementById('doneScr').style.display='flex';
+    document.getElementById('doneScr').style.flexDirection='column';
+    document.getElementById('doneScr').style.alignItems='center';
+    document.getElementById('doneScr').style.justifyContent='center';
+    bCf();
+  },500);
+}
+
+function resetGame() {
+  level=1;cc=0;streak=0;tot=0;
+  document.getElementById('sNum').textContent='0';
+  document.getElementById('cNum').textContent='0';
+  document.getElementById('lvBadge').textContent='⭐ Nivå 1 — Dubblor 1–5';
+  document.getElementById('lvBadge').className='level-badge lv1-b';
+  document.getElementById('doneScr').style.display='none';
+  document.getElementById('lvOv').classList.remove('show');
+  const g=document.getElementById('gameArea');
+  g.style.display='flex';
+  updProg(); newQ();
+}
+</script>
+</body>
+</html>
