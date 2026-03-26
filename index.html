@@ -131,11 +131,7 @@
     box-shadow: 0 4px 24px rgba(0,0,0,0.06);
     border: 3px solid #f3f4f6;
   }
-  .story-emoji {
-    font-size: 3rem; margin-bottom: 4px; display: block;
-    animation: wiggle 3s ease-in-out infinite;
-  }
-  @keyframes wiggle { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-4deg)} 75%{transform:rotate(4deg)} }
+
 
   .items-row {
     display: flex; justify-content: center; gap: 3px;
@@ -302,7 +298,7 @@
       <div class="score-box"><div class="num c-clr" id="cNum">0</div><div class="lbl">Rätt ✅</div></div>
     </div>
     <div class="story-card">
-      <span class="story-emoji" id="sEmoji">🐱</span>
+
       <div class="items-row" id="iRow"></div>
       <div class="story-text" id="sTxt"></div>
       <div class="q-line" id="qLine"></div>
@@ -488,7 +484,6 @@ function newQ() {
   const tpl = pk(pool);
   const story = tpl(n1, n2, num, thing);
 
-  document.getElementById('sEmoji').textContent = thing.e;
 
   // Items row
   const ir = document.getElementById('iRow');
